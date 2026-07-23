@@ -166,7 +166,7 @@
       </div>
       <div class="field-row">
         <div class="field"><label>호수</label><input type="number" id="fNo" placeholder="예: 27"></div>
-        <div class="field"><label>발행일</label><input type="date" id="fYm"></div>
+        <div class="field"><label>발행년월</label><input type="month" id="fYm"></div>
       </div>
       <div class="field"><label>제목</label><input type="text" id="fTitle" placeholder="예: 생산월보 27호"></div>
       <div class="field">
@@ -366,7 +366,7 @@ fFile.addEventListener('change', ()=>{
 
 document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const no = document.getElementById('fNo').value.trim();
-  const ymRaw = document.getElementById('fYm').value.trim(); // yyyy-mm-dd from date input
+  const ymRaw = document.getElementById('fYm').value.trim(); // yyyy-mm from month input
   const ym = ymRaw ? ymRaw.replaceAll('-', '.') : '';
   const title = document.getElementById('fTitle').value.trim();
   const statusMsg = document.getElementById('statusMsg');
@@ -374,7 +374,7 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
 
   statusMsg.className = 'status-msg';
   if(!no || !ym || !title){
-    statusMsg.textContent = '호수, 발행일, 제목을 모두 입력해주세요.'; statusMsg.classList.add('err'); return;
+    statusMsg.textContent = '호수, 발행년월, 제목을 모두 입력해주세요.'; statusMsg.classList.add('err'); return;
   }
   if(pendingFile && pendingFile.size > 50*1024*1024){
     statusMsg.textContent = '파일이 50MB를 넘어요.'; statusMsg.classList.add('err'); return;
