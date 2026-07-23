@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>생산월보 | AJU PRODUCTION</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -111,7 +111,8 @@
   .viewer-top .vt-title{font-weight:700; font-size:13.5px;}
   .viewer-top .vt-sub{font-size:10.5px; color:var(--slate);}
   .viewer-top .close-btn{width:30px;height:30px;border-radius:50%;background:var(--panel-2); display:flex;align-items:center;justify-content:center; cursor:pointer; border:1px solid var(--line); flex:none;}
-  .viewer-stage{flex:1; position:relative; overflow-y:auto; -webkit-overflow-scrolling:touch; background:#0a0d10; padding:10px 0 30px;}
+  .viewer-stage{flex:1; position:relative; overflow-y:auto; -webkit-overflow-scrolling:touch; background:#0a0d10; padding:10px 0 30px; touch-action:pan-y;}
+  #stageInner{transform-origin:0 0; will-change:transform;}
   .pdf-page-canvas{display:block; width:100%; height:auto; margin:0 0 8px;}
   .viewer-empty{height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:30px; text-align:center;}
   .viewer-empty p{font-size:12.5px; color:var(--slate); line-height:1.6; margin:0;}
@@ -386,6 +387,8 @@ async function openViewer(iss){
   vTitle.textContent = `${iss.no}호 · ${iss.title}`;
   vSub.textContent = `${lotCode(iss)} · ${iss.ym}`;
   overlay.classList.add('open');
+  overlayOpenedAt = Date.now();
+  resetZoom();
   if(!iss.has_pdf || !iss.pdf_path){
     stage.innerHTML = `<div class="viewer-empty"><p>이 호는 아직 PDF가 업로드되지 않았어요.<br>관리자 업로드 탭에서 <b>${iss.no}호</b> PDF를 올려주세요.</p><button id="goAdminBtn">관리자 업로드로 이동</button></div>`;
     document.getElementById('goAdminBtn').onclick = ()=>{
@@ -401,6 +404,7 @@ async function openViewer(iss){
     const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
     const containerWidth = stage.clientWidth || 400;
     let first = true;
+    let inner = null;
     for(let i=1; i<=pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const baseViewport = page.getViewport({ scale: 1 });
@@ -416,8 +420,15 @@ async function openViewer(iss){
       canvas.style.width = containerWidth + 'px';
       canvas.style.height = (viewport.height / displayScale) + 'px';
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      if(first){ stage.innerHTML = ''; first = false; }
-      stage.appendChild(canvas);
+      if(first){
+        stage.innerHTML = '';
+        inner = document.createElement('div');
+        inner.id = 'stageInner';
+        stage.appendChild(inner);
+        stageInner = inner;
+        first = false;
+      }
+      inner.appendChild(canvas);
     }
   }catch(e){
     console.error(e);
@@ -425,7 +436,65 @@ async function openViewer(iss){
   }
 }
 document.getElementById('closeBtn').onclick = ()=> overlay.classList.remove('open');
-overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.remove('open'); });
+let overlayOpenedAt = 0;
+
+// ---------- PINCH TO ZOOM ----------
+let stageInner = null;
+let zoom = 1, panX = 0, panY = 0;
+let pinchStartDist = 0, pinchStartZoom = 1;
+let isPanning = false, panStart = null;
+
+function applyTransform(){
+  if(!stageInner) return;
+  stageInner.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+}
+function resetZoom(){
+  zoom = 1; panX = 0; panY = 0;
+  stage.style.touchAction = 'pan-y';
+  applyTransform();
+}
+function dist(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+stage.addEventListener('touchstart', (e)=>{
+  if(!stageInner) return;
+  if(e.touches.length === 2){
+    e.preventDefault();
+    pinchStartDist = dist(e.touches);
+    pinchStartZoom = zoom;
+    stage.style.touchAction = 'none';
+  }else if(e.touches.length === 1 && zoom > 1){
+    isPanning = true;
+    panStart = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
+  }
+}, { passive:false });
+
+stage.addEventListener('touchmove', (e)=>{
+  if(!stageInner) return;
+  if(e.touches.length === 2 && pinchStartDist){
+    e.preventDefault();
+    const newDist = dist(e.touches);
+    zoom = Math.min(Math.max(pinchStartZoom * (newDist / pinchStartDist), 1), 4);
+    applyTransform();
+  }else if(e.touches.length === 1 && isPanning){
+    e.preventDefault();
+    panX = e.touches[0].clientX - panStart.x;
+    panY = e.touches[0].clientY - panStart.y;
+    applyTransform();
+  }
+}, { passive:false });
+
+stage.addEventListener('touchend', (e)=>{
+  if(e.touches.length < 2) pinchStartDist = 0;
+  if(e.touches.length === 0){
+    isPanning = false;
+    if(zoom <= 1.02){ zoom = 1; panX = 0; panY = 0; stage.style.touchAction = 'pan-y'; applyTransform(); }
+  }
+});
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay && Date.now()-overlayOpenedAt>400) overlay.classList.remove('open'); });
 
 // ---------- ADMIN GATE ----------
 document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
