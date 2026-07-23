@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>생산월보 | AJU PRODUCTION</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://yrxqfynnzvgfyritltav.supabase.co">
+<link rel="dns-prefetch" href="https://yrxqfynnzvgfyritltav.supabase.co">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --ink:#0C1116; --panel:#141B22; --panel-2:#1B242C; --paper:#F2F5F3;
@@ -227,6 +228,10 @@
       </div>
       <button class="submit-btn" id="submitBtn">이 호 업로드하기</button>
       <div class="status-msg" id="statusMsg"></div>
+
+      <button class="submit-btn" id="regenThumbsBtn" style="background:var(--panel-2); color:var(--paper); border:1px solid var(--line); margin-top:16px;">기존 호 표지 이미지 일괄 생성</button>
+      <div class="status-msg" id="regenMsg"></div>
+
       <div class="admin-list">
         <h3>업로드된 호 목록 (<span id="listCount">0</span>)</h3>
         <div id="adminRows"></div>
@@ -262,7 +267,26 @@ const ADMIN_PASSWORD = 'aju2026'; // 원하는 비밀번호로 바꾸세요
 // ================================================================================
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET = 'newsletters';
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// pdf.js는 용량이 커서(약 1MB+) 홈 화면 방문자에게는 필요 없어요.
+// 관리자가 실제로 PDF를 올릴 때만 그때 불러옵니다.
+let pdfJsLoadPromise = null;
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve();
+  if(pdfJsLoadPromise) return pdfJsLoadPromise;
+  pdfJsLoadPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = ()=>{
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return pdfJsLoadPromise;
+}
+
 function thumbUrl(iss){
   if(!iss.has_pdf) return null;
   const { data } = sb.storage.from(BUCKET).getPublicUrl(`thumb-${iss.no}.jpg`);
@@ -407,7 +431,50 @@ fFile.addEventListener('change', ()=>{
   fdSub.textContent = `${(file.size/1024/1024).toFixed(2)} MB`;
 });
 
+async function generateThumbnailFromUrl(url){
+  await loadPdfJs();
+  const pdf = await pdfjsLib.getDocument(url).promise;
+  const page = await pdf.getPage(1);
+  const baseViewport = page.getViewport({ scale: 1 });
+  const scale = 700 / baseViewport.width;
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width; canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+}
+
+document.getElementById('regenThumbsBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('regenThumbsBtn');
+  const msg = document.getElementById('regenMsg');
+  const targets = issues.filter(i => i.has_pdf && i.pdf_path);
+  if(targets.length === 0){ msg.textContent = '표지를 만들 PDF가 없어요.'; msg.className='status-msg err'; return; }
+
+  btn.disabled = true;
+  let done = 0, failed = 0;
+  for(const iss of targets){
+    msg.className = 'status-msg';
+    msg.textContent = `${done + failed + 1}/${targets.length}호 처리 중... (${iss.no}호)`;
+    try{
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
+      const blob = await generateThumbnailFromUrl(data.publicUrl);
+      if(blob){
+        await sb.storage.from(BUCKET).upload(`thumb-${iss.no}.jpg`, blob, { upsert:true, contentType:'image/jpeg' });
+      }
+      done++;
+    }catch(e){
+      console.error(`thumb regen failed for ${iss.no}호`, e);
+      failed++;
+    }
+  }
+  msg.textContent = `완료: ${done}개 성공${failed ? `, ${failed}개 실패` : ''}`;
+  msg.classList.add(failed ? 'err' : 'ok');
+  btn.disabled = false;
+  renderHome();
+});
+
 async function generateThumbnailBlob(file){
+  await loadPdfJs();
   const objUrl = URL.createObjectURL(file);
   try{
     const pdf = await pdfjsLib.getDocument(objUrl).promise;
