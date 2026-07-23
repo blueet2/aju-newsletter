@@ -113,6 +113,7 @@
   .viewer-top .close-btn{width:30px;height:30px;border-radius:50%;background:var(--panel-2); display:flex;align-items:center;justify-content:center; cursor:pointer; border:1px solid var(--line); flex:none;}
   .viewer-stage{flex:1; position:relative; overflow-y:auto; -webkit-overflow-scrolling:touch; background:#0a0d10; padding:10px 0 30px; touch-action:pan-y;}
   #stageInner{transform-origin:0 0; will-change:transform;}
+  .pdf-page-placeholder{background:linear-gradient(180deg, #12171d, #0e1319); margin:0 0 8px;}
   .pdf-page-canvas{display:block; width:100%; height:auto; margin:0 0 8px;}
   .viewer-empty{height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:30px; text-align:center;}
   .viewer-empty p{font-size:12.5px; color:var(--slate); line-height:1.6; margin:0;}
@@ -388,6 +389,7 @@ async function openViewer(iss){
   vSub.textContent = `${lotCode(iss)} · ${iss.ym}`;
   overlay.classList.add('open');
   overlayOpenedAt = Date.now();
+  suppressGhostClick();
   resetZoom();
   if(!iss.has_pdf || !iss.pdf_path){
     stage.innerHTML = `<div class="viewer-empty"><p>이 호는 아직 PDF가 업로드되지 않았어요.<br>관리자 업로드 탭에서 <b>${iss.no}호</b> PDF를 올려주세요.</p><button id="goAdminBtn">관리자 업로드로 이동</button></div>`;
@@ -403,40 +405,77 @@ async function openViewer(iss){
     const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
     const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
     const containerWidth = stage.clientWidth || 400;
-    let first = true;
-    let inner = null;
-    for(let i=1; i<=pdf.numPages; i++){
-      const page = await pdf.getPage(i);
-      const baseViewport = page.getViewport({ scale: 1 });
-      // 화면 배율과 상관없이 최소 1400px 물리 해상도를 보장해서 작은 글자/표도 선명하게 렌더링
-      const dpr = window.devicePixelRatio || 1;
-      const targetPhysicalWidth = Math.max(containerWidth * dpr, 1400);
-      const displayScale = targetPhysicalWidth / containerWidth; // canvas 배율 대비 표시 축소 비율
-      const viewport = page.getViewport({ scale: targetPhysicalWidth / baseViewport.width });
-      const canvas = document.createElement('canvas');
-      canvas.className = 'pdf-page-canvas';
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.style.width = containerWidth + 'px';
-      canvas.style.height = (viewport.height / displayScale) + 'px';
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      if(first){
-        stage.innerHTML = '';
-        inner = document.createElement('div');
-        inner.id = 'stageInner';
-        stage.appendChild(inner);
-        stageInner = inner;
-        first = false;
+    const dpr = window.devicePixelRatio || 1;
+
+    const page1 = await pdf.getPage(1);
+    const { canvas: canvas1, cssHeight: h1 } = await renderPdfPage(page1, containerWidth, dpr);
+
+    stage.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.id = 'stageInner';
+    stage.appendChild(inner);
+    stageInner = inner;
+    inner.appendChild(canvas1);
+
+    if(pdf.numPages > 1){
+      const placeholders = [];
+      for(let i=2; i<=pdf.numPages; i++){
+        const ph = document.createElement('div');
+        ph.className = 'pdf-page-placeholder';
+        ph.dataset.page = i;
+        ph.style.width = containerWidth + 'px';
+        ph.style.height = h1 + 'px'; // 대략 1페이지 비율로 예약, 실제 그려지면 자연 조정
+        inner.appendChild(ph);
+        placeholders.push(ph);
       }
-      inner.appendChild(canvas);
+      const observer = new IntersectionObserver((entries)=>{
+        entries.forEach(async (entry)=>{
+          if(!entry.isIntersecting) return;
+          const ph = entry.target;
+          observer.unobserve(ph);
+          try{
+            const pageNum = Number(ph.dataset.page);
+            const page = await pdf.getPage(pageNum);
+            const { canvas } = await renderPdfPage(page, containerWidth, dpr);
+            ph.replaceWith(canvas);
+          }catch(err){ console.error('page render failed', err); }
+        });
+      }, { root: stage, rootMargin: '1000px 0px', threshold: 0.01 });
+      placeholders.forEach(ph => observer.observe(ph));
     }
   }catch(e){
     console.error(e);
     stage.innerHTML = `<div class="viewer-empty"><p>PDF를 불러오는 중 오류가 발생했어요.</p></div>`;
   }
 }
+
+async function renderPdfPage(page, containerWidth, dpr){
+  const baseViewport = page.getViewport({ scale: 1 });
+  // 화면 배율과 상관없이 최소 1400px 물리 해상도를 보장해서 작은 글자/표도 선명하게 렌더링
+  const targetPhysicalWidth = Math.max(containerWidth * dpr, 1400);
+  const displayScale = targetPhysicalWidth / containerWidth;
+  const viewport = page.getViewport({ scale: targetPhysicalWidth / baseViewport.width });
+  const canvas = document.createElement('canvas');
+  canvas.className = 'pdf-page-canvas';
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.width = containerWidth + 'px';
+  const cssHeight = viewport.height / displayScale;
+  canvas.style.height = cssHeight + 'px';
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return { canvas, cssHeight };
+}
 document.getElementById('closeBtn').onclick = ()=> overlay.classList.remove('open');
 let overlayOpenedAt = 0;
+function suppressGhostClick(){
+  const blocker = (e)=>{ e.stopPropagation(); e.preventDefault(); };
+  overlay.addEventListener('click', blocker, true);
+  overlay.addEventListener('touchend', blocker, true);
+  setTimeout(()=>{
+    overlay.removeEventListener('click', blocker, true);
+    overlay.removeEventListener('touchend', blocker, true);
+  }, 500);
+}
 
 // ---------- PINCH TO ZOOM ----------
 let stageInner = null;
