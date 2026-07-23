@@ -15,6 +15,14 @@
     --slate:#7C8894; --teal:#29D9C2; --amber:#F5A623; --red:#E5605A;
     --line:rgba(242,245,243,0.09); --radius:18px;
   }
+  html[data-theme="light"]{
+    --ink:#F4F5F3; --panel:#FFFFFF; --panel-2:#EDEFEC; --paper:#14181C;
+    --slate:#6B7480; --line:rgba(20,24,28,0.10);
+  }
+  body{transition:background .2s ease, color .2s ease;}
+  .app, .lot-card, .mini-card .swatch, .pill, header .search-btn, .notice, .empty-state, .admin-row, .file-drop, .field input, .field select{
+    transition:background .2s ease, color .2s ease, border-color .2s ease;
+  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
   body{background:var(--ink); color:var(--paper); font-family:'Noto Sans KR', sans-serif; min-height:100vh; display:flex; justify-content:center;}
@@ -26,7 +34,7 @@
   .brand .titles{line-height:1.15;}
   .brand .titles .t1{font-family:'Space Grotesk'; font-weight:600; font-size:15px;}
   .brand .titles .t2{font-size:10.5px; color:var(--slate); letter-spacing:0.04em;}
-  header .search-btn{width:36px;height:36px;border-radius:50%; background:var(--panel); display:flex;align-items:center;justify-content:center; border:1px solid var(--line);}
+  header .search-btn{width:36px;height:36px;border-radius:50%; background:var(--panel); display:flex;align-items:center;justify-content:center; border:1px solid var(--line); color:var(--paper); cursor:pointer;}
   .view{display:none;} .view.on{display:block;}
   .pills{display:flex; gap:8px; padding:14px 18px; overflow-x:auto; scrollbar-width:none;}
   .pills::-webkit-scrollbar{display:none;}
@@ -175,8 +183,13 @@
         <div class="t2 mono">PRODUCTION MONTHLY · 평택공장</div>
       </div>
     </div>
-    <div class="search-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2F5F3" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div style="display:flex; gap:8px;">
+      <div class="search-btn" id="themeToggle">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/></svg>
+      </div>
+      <div class="search-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
     </div>
   </header>
 
@@ -575,6 +588,20 @@ function renderAdminList(){
     wrap.appendChild(row);
   });
 }
+
+// ---------- THEME ----------
+const sunIcon = `<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>`;
+const moonIcon = `<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>`;
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('aju-theme', theme);
+  document.getElementById('themeIcon').innerHTML = theme === 'light' ? moonIcon : sunIcon;
+}
+applyTheme(localStorage.getItem('aju-theme') || 'dark');
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
 
 loadIssues();
 </script>
