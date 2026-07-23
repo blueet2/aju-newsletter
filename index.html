@@ -400,19 +400,21 @@ async function openViewer(iss){
     const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
     const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
     const containerWidth = stage.clientWidth || 400;
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
     let first = true;
     for(let i=1; i<=pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const baseViewport = page.getViewport({ scale: 1 });
-      const cssScale = containerWidth / baseViewport.width;
-      const viewport = page.getViewport({ scale: cssScale * dpr });
+      // 화면 배율과 상관없이 최소 1400px 물리 해상도를 보장해서 작은 글자/표도 선명하게 렌더링
+      const dpr = window.devicePixelRatio || 1;
+      const targetPhysicalWidth = Math.max(containerWidth * dpr, 1400);
+      const displayScale = targetPhysicalWidth / containerWidth; // canvas 배율 대비 표시 축소 비율
+      const viewport = page.getViewport({ scale: targetPhysicalWidth / baseViewport.width });
       const canvas = document.createElement('canvas');
       canvas.className = 'pdf-page-canvas';
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       canvas.style.width = containerWidth + 'px';
-      canvas.style.height = (viewport.height / dpr) + 'px';
+      canvas.style.height = (viewport.height / displayScale) + 'px';
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
       if(first){ stage.innerHTML = ''; first = false; }
       stage.appendChild(canvas);
