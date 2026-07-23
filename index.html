@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --ink:#0C1116; --panel:#141B22; --panel-2:#1B242C; --paper:#F2F5F3;
@@ -38,7 +39,10 @@
   .hero-scroll::-webkit-scrollbar{display:none;}
   .lot-card{position:relative; flex:none; width:230px; scroll-snap-align:start; border-radius:var(--radius); background:var(--panel); border:1px solid var(--line); overflow:hidden; cursor:pointer; transition:transform .18s ease;}
   .lot-card:active{transform:scale(0.97);}
-  .lot-card .swatch{height:150px; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:14px;}
+  .lot-card .swatch{height:150px; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:14px; overflow:hidden;}
+  .lot-card .swatch .cover-canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+  .lot-card .swatch::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.55) 100%); z-index:1;}
+  .lot-card .swatch .badge, .lot-card .swatch .month{position:relative; z-index:2;}
   .lot-card .swatch .badge{align-self:flex-start; background:rgba(12,17,22,0.35); backdrop-filter:blur(4px); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:0.08em; padding:3px 8px; border-radius:5px;}
   .lot-card .swatch .month{font-family:'Space Grotesk'; font-size:34px; font-weight:700; color:rgba(255,255,255,0.94); line-height:1;}
   .lot-card .swatch .month small{font-size:14px; font-weight:600; opacity:.85;}
@@ -49,7 +53,10 @@
   .past-scroll{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -18px; padding:0 18px 4px; scrollbar-width:none;}
   .past-scroll::-webkit-scrollbar{display:none;}
   .mini-card{flex:none; width:104px; scroll-snap-align:start; cursor:pointer;}
-  .mini-card .swatch{height:130px; border-radius:12px; border:1px solid var(--line); display:flex; align-items:flex-end; padding:8px; position:relative;}
+  .mini-card .swatch{height:130px; border-radius:12px; border:1px solid var(--line); display:flex; align-items:flex-end; padding:8px; position:relative; overflow:hidden;}
+  .mini-card .swatch .cover-canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+  .mini-card .swatch::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.6) 100%); z-index:1;}
+  .mini-card .swatch .month{position:relative; z-index:2;}
   .mini-card .swatch .month{font-family:'Space Grotesk'; font-weight:700; font-size:20px; color:#fff;}
   .mini-card .cap{font-size:10.5px; color:var(--slate); margin-top:6px; text-align:center;}
   .dots{display:flex; gap:5px; justify-content:center; margin-top:12px;}
@@ -96,11 +103,11 @@
   .ar-badge.pdf{background:rgba(41,217,194,0.15); color:var(--teal);}
   .ar-badge.empty{background:rgba(124,136,148,0.15); color:var(--slate);}
   .ar-del{flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--panel-2); border:1px solid var(--line); cursor:pointer;}
-  .viewer-overlay{position:fixed; inset:0; background:rgba(4,6,8,0.86); display:none; align-items:flex-end; justify-content:center; z-index:50;}
+  .viewer-overlay{position:fixed; inset:0; background:#000; display:none; align-items:center; justify-content:center; z-index:50;}
   .viewer-overlay.open{display:flex;}
-  .viewer{width:100%; max-width:430px; height:90vh; background:var(--panel); border-radius:22px 22px 0 0; display:flex; flex-direction:column; overflow:hidden; animation:up .25s ease;}
-  @keyframes up{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
-  .viewer-top{padding:14px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);}
+  .viewer{width:100%; max-width:430px; height:100vh; background:var(--panel); border-radius:0; display:flex; flex-direction:column; overflow:hidden; animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;} to{opacity:1;}}
+  .viewer-top{padding:12px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); flex:none;}
   .viewer-top .vt-title{font-weight:700; font-size:13.5px;}
   .viewer-top .vt-sub{font-size:10.5px; color:var(--slate);}
   .viewer-top .close-btn{width:30px;height:30px;border-radius:50%;background:var(--panel-2); display:flex;align-items:center;justify-content:center; cursor:pointer; border:1px solid var(--line); flex:none;}
@@ -214,6 +221,35 @@ const ADMIN_PASSWORD = 'aju2026'; // 원하는 비밀번호로 바꾸세요
 // ================================================================================
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET = 'newsletters';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const thumbCache = {}; // no -> dataURL, avoids re-rendering the same PDF twice in one session
+
+async function renderCoverThumb(iss, canvasEl){
+  if(!iss.has_pdf || !iss.pdf_path) return;
+  try{
+    let dataUrl = thumbCache[iss.no];
+    if(!dataUrl){
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
+      const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
+      const page = await pdf.getPage(1);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const scale = 500 / baseViewport.width;
+      const viewport = page.getViewport({ scale });
+      const off = document.createElement('canvas');
+      off.width = viewport.width; off.height = viewport.height;
+      await page.render({ canvasContext: off.getContext('2d'), viewport }).promise;
+      dataUrl = off.toDataURL('image/jpeg', 0.82);
+      thumbCache[iss.no] = dataUrl;
+    }
+    if(!canvasEl.isConnected) return; // card may have been re-rendered already
+    const img = new Image();
+    img.onload = ()=>{
+      canvasEl.width = img.width; canvasEl.height = img.height;
+      canvasEl.getContext('2d').drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+  }catch(e){ console.error('thumb render failed', e); }
+}
 
 const gradients = [
   'linear-gradient(135deg,#1a6f63,#0c3d36)','linear-gradient(135deg,#2a5f8f,#0e2c47)',
@@ -264,6 +300,7 @@ function renderHome(){
     card.className='lot-card';
     card.innerHTML = `
       <div class="swatch" style="background:${g}">
+        <canvas class="cover-canvas"></canvas>
         ${idx===0? '<span class="badge">NEW</span>' : ''}
         <div class="month">${iss.no}<small>호</small></div>
       </div>
@@ -274,6 +311,7 @@ function renderHome(){
       <div class="barcode"></div>`;
     card.onclick = ()=>openViewer(iss);
     heroScroll.appendChild(card);
+    renderCoverThumb(iss, card.querySelector('.cover-canvas'));
     const dot = document.createElement('span'); if(idx===0) dot.className='on';
     heroDots.appendChild(dot);
   });
@@ -283,9 +321,10 @@ function renderHome(){
     const g = gradients[(idx+2) % gradients.length];
     const card = document.createElement('div');
     card.className='mini-card';
-    card.innerHTML = `<div class="swatch" style="background:${g}"><span class="month">${iss.no}</span></div><div class="cap">${iss.ym}</div>`;
+    card.innerHTML = `<div class="swatch" style="background:${g}"><canvas class="cover-canvas"></canvas><span class="month">${iss.no}</span></div><div class="cap">${iss.ym}</div>`;
     card.onclick = ()=>openViewer(iss);
     pastScroll.appendChild(card);
+    renderCoverThumb(iss, card.querySelector('.cover-canvas'));
   });
 }
 
