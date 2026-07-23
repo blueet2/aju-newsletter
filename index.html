@@ -132,13 +132,6 @@
   </header>
 
   <div class="view on" id="viewHome">
-    <div class="pills" id="pills">
-      <div class="pill active" data-f="all">전체</div>
-      <div class="pill" data-f="현장">생산현장</div>
-      <div class="pill" data-f="품질">품질/안전</div>
-      <div class="pill" data-f="인사">인사동정</div>
-      <div class="pill" data-f="공지">사내공지</div>
-    </div>
     <section>
       <div class="section-head"><h2>최신 발행호</h2><span class="sub">옆으로 넘겨 이달의 소식을 확인하세요</span></div>
       <div class="hero-scroll" id="heroScroll"></div>
@@ -173,16 +166,9 @@
       </div>
       <div class="field-row">
         <div class="field"><label>호수</label><input type="number" id="fNo" placeholder="예: 27"></div>
-        <div class="field"><label>발행년월</label><input type="text" id="fYm" placeholder="예: 2026.07"></div>
+        <div class="field"><label>발행일</label><input type="date" id="fYm"></div>
       </div>
-      <div class="field"><label>제목</label><input type="text" id="fTitle" placeholder="예: 하절기 생산 안전주간 특집"></div>
-      <div class="field">
-        <label>카테고리</label>
-        <select id="fCat">
-          <option value="현장">생산현장</option><option value="품질">품질/안전</option>
-          <option value="인사">인사동정</option><option value="공지">사내공지</option>
-        </select>
-      </div>
+      <div class="field"><label>제목</label><input type="text" id="fTitle" placeholder="예: 생산월보 27호"></div>
       <div class="field">
         <label>PDF 파일</label>
         <div class="file-drop" id="fileDrop">
@@ -222,7 +208,7 @@
 
 <script>
 // ============ Supabase 연결 정보 (여기 두 줄만 본인 값으로 교체하세요) ============
-const SUPABASE_URL = 'https://yrxqfynnzvgfyritltav.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://yrxqfynnzvgfyritltav.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyeHFmeW5uenZnZnlyaXRsdGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NjczMjgsImV4cCI6MjEwMDM0MzMyOH0.OgA8gEZKZ6OW-vErflzhiHPF-dEs4PwDPEF_3DEDR_w';
 const ADMIN_PASSWORD = 'aju2026'; // 원하는 비밀번호로 바꾸세요
 // ================================================================================
@@ -234,7 +220,6 @@ const gradients = [
   'linear-gradient(135deg,#7a5a1e,#3c2b0d)','linear-gradient(135deg,#5a3d7a,#2b1a3c)',
   'linear-gradient(135deg,#7a2e2e,#3c1414)','linear-gradient(135deg,#2e6b4f,#123322)'
 ];
-const catLabel = {현장:'생산현장', 품질:'품질/안전', 인사:'인사동정', 공지:'사내공지'};
 let issues = [];
 
 async function loadIssues(){
@@ -245,13 +230,13 @@ async function loadIssues(){
   }catch(e){
     console.error(e); issues = [];
   }
-  renderHome('all');
+  renderHome();
   renderAdminList();
 }
 
-function lotCode(iss){ return `LOT AJU-${String(iss.no).padStart(2,'0')}${(iss.ym||'').replace('.','').slice(2)}`; }
+function lotCode(iss){ return `LOT AJU-${String(iss.no).padStart(2,'0')}${(iss.ym||'').replace(/\./g,'').slice(2,6)}`; }
 
-function renderHome(filter){
+function renderHome(){
   const heroScroll = document.getElementById('heroScroll');
   const heroDots = document.getElementById('heroDots');
   const pastScroll = document.getElementById('pastScroll');
@@ -260,7 +245,7 @@ function renderHome(filter){
   const emptyState = document.getElementById('emptyState');
   const noticeBox = document.getElementById('noticeBox');
   heroScroll.innerHTML=''; heroDots.innerHTML=''; pastScroll.innerHTML='';
-  const list = issues.filter(i=> filter==='all' || i.category===filter);
+  const list = issues;
 
   if(issues.length===0){
     emptyState.style.display='block'; pastSection.style.display='none'; noticeBox.style.display='none';
@@ -279,7 +264,7 @@ function renderHome(filter){
     card.className='lot-card';
     card.innerHTML = `
       <div class="swatch" style="background:${g}">
-        <span class="badge">${idx===0? 'NEW · '+catLabel[iss.category] : catLabel[iss.category]}</span>
+        ${idx===0? '<span class="badge">NEW</span>' : ''}
         <div class="month">${iss.no}<small>호</small></div>
       </div>
       <div class="body">
@@ -303,13 +288,6 @@ function renderHome(filter){
     pastScroll.appendChild(card);
   });
 }
-
-document.querySelectorAll('.pill').forEach(p=>{
-  p.addEventListener('click', ()=>{
-    document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
-    p.classList.add('active'); renderHome(p.dataset.f);
-  });
-});
 
 document.querySelectorAll('nav.tabbar .tab').forEach(t=>{
   t.addEventListener('click', ()=>{
@@ -365,6 +343,17 @@ const fdTitle = document.getElementById('fdTitle');
 const fdSub = document.getElementById('fdSub');
 let pendingFile = null;
 
+document.getElementById('fNo').addEventListener('input', (e)=>{
+  const fTitle = document.getElementById('fTitle');
+  if(!fTitle.value.trim() || fTitle.dataset.auto === '1'){
+    fTitle.value = e.target.value ? `생산월보 ${e.target.value}호` : '';
+    fTitle.dataset.auto = '1';
+  }
+});
+document.getElementById('fTitle').addEventListener('input', (e)=>{
+  e.target.dataset.auto = '0';
+});
+
 fFile.addEventListener('change', ()=>{
   const file = fFile.files[0];
   if(!file) return;
@@ -377,15 +366,15 @@ fFile.addEventListener('change', ()=>{
 
 document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const no = document.getElementById('fNo').value.trim();
-  const ym = document.getElementById('fYm').value.trim();
+  const ymRaw = document.getElementById('fYm').value.trim(); // yyyy-mm-dd from date input
+  const ym = ymRaw ? ymRaw.replaceAll('-', '.') : '';
   const title = document.getElementById('fTitle').value.trim();
-  const category = document.getElementById('fCat').value;
   const statusMsg = document.getElementById('statusMsg');
   const submitBtn = document.getElementById('submitBtn');
 
   statusMsg.className = 'status-msg';
   if(!no || !ym || !title){
-    statusMsg.textContent = '호수, 발행년월, 제목을 모두 입력해주세요.'; statusMsg.classList.add('err'); return;
+    statusMsg.textContent = '호수, 발행일, 제목을 모두 입력해주세요.'; statusMsg.classList.add('err'); return;
   }
   if(pendingFile && pendingFile.size > 50*1024*1024){
     statusMsg.textContent = '파일이 50MB를 넘어요.'; statusMsg.classList.add('err'); return;
@@ -403,12 +392,13 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
       has_pdf = true;
     }
     const existing = issues.find(i=> String(i.no)===String(no));
-    const row = { no:Number(no), ym, title, category, has_pdf: has_pdf || (existing && existing.has_pdf) || false, pdf_path: pdf_path || (existing && existing.pdf_path) || null };
+    const row = { no:Number(no), ym, title, has_pdf: has_pdf || (existing && existing.has_pdf) || false, pdf_path: pdf_path || (existing && existing.pdf_path) || null };
     const { error: upsertErr } = await sb.from('issues').upsert(row, { onConflict:'no' });
     if(upsertErr) throw upsertErr;
 
     statusMsg.textContent = `${no}호가 저장됐어요.`; statusMsg.classList.add('ok');
     document.getElementById('fNo').value=''; document.getElementById('fYm').value=''; document.getElementById('fTitle').value='';
+    document.getElementById('fTitle').dataset.auto = '0';
     pendingFile = null; fFile.value=''; fileDrop.classList.remove('has-file');
     fdTitle.textContent = '탭해서 PDF 선택'; fdSub.textContent = '최대 50MB';
 
@@ -432,7 +422,7 @@ function renderAdminList(){
     row.className = 'admin-row';
     row.innerHTML = `
       <div class="ar-no mono">#${iss.no}</div>
-      <div class="ar-mid"><div class="ar-title">${iss.title}</div><div class="ar-sub">${iss.ym} · ${catLabel[iss.category]}</div></div>
+      <div class="ar-mid"><div class="ar-title">${iss.title}</div><div class="ar-sub">${iss.ym}</div></div>
       <span class="ar-badge ${iss.has_pdf?'pdf':'empty'}">${iss.has_pdf?'PDF 있음':'PDF 없음'}</span>
       <div class="ar-del" data-no="${iss.no}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E5605A" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></div>`;
     row.querySelector('.ar-del').addEventListener('click', async ()=>{
