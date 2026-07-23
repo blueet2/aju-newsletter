@@ -40,7 +40,7 @@
   .lot-card{position:relative; flex:none; width:230px; scroll-snap-align:start; border-radius:var(--radius); background:var(--panel); border:1px solid var(--line); overflow:hidden; cursor:pointer; transition:transform .18s ease;}
   .lot-card:active{transform:scale(0.97);}
   .lot-card .swatch{height:150px; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:14px; overflow:hidden;}
-  .lot-card .swatch .cover-canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+  .lot-card .swatch .cover-canvas, .lot-card .swatch .cover-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
   .lot-card .swatch::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.55) 100%); z-index:1;}
   .lot-card .swatch .badge, .lot-card .swatch .month{position:relative; z-index:2;}
   .lot-card .swatch .badge{align-self:flex-start; background:rgba(12,17,22,0.35); backdrop-filter:blur(4px); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:0.08em; padding:3px 8px; border-radius:5px;}
@@ -54,7 +54,7 @@
   .past-scroll::-webkit-scrollbar{display:none;}
   .mini-card{flex:none; width:104px; scroll-snap-align:start; cursor:pointer;}
   .mini-card .swatch{height:130px; border-radius:12px; border:1px solid var(--line); display:flex; align-items:flex-end; padding:8px; position:relative; overflow:hidden;}
-  .mini-card .swatch .cover-canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+  .mini-card .swatch .cover-canvas, .mini-card .swatch .cover-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
   .mini-card .swatch::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.6) 100%); z-index:1;}
   .mini-card .swatch .month{position:relative; z-index:2;}
   .mini-card .swatch .month{font-family:'Space Grotesk'; font-weight:700; font-size:20px; color:#fff;}
@@ -263,33 +263,22 @@ const ADMIN_PASSWORD = 'aju2026'; // 원하는 비밀번호로 바꾸세요
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET = 'newsletters';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const thumbCache = {}; // no -> dataURL, avoids re-rendering the same PDF twice in one session
+function thumbUrl(iss){
+  if(!iss.has_pdf) return null;
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(`thumb-${iss.no}.jpg`);
+  return data.publicUrl;
+}
 
-async function renderCoverThumb(iss, canvasEl){
-  if(!iss.has_pdf || !iss.pdf_path) return;
-  try{
-    let dataUrl = thumbCache[iss.no];
-    if(!dataUrl){
-      const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
-      const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
-      const page = await pdf.getPage(1);
-      const baseViewport = page.getViewport({ scale: 1 });
-      const scale = 500 / baseViewport.width;
-      const viewport = page.getViewport({ scale });
-      const off = document.createElement('canvas');
-      off.width = viewport.width; off.height = viewport.height;
-      await page.render({ canvasContext: off.getContext('2d'), viewport }).promise;
-      dataUrl = off.toDataURL('image/jpeg', 0.82);
-      thumbCache[iss.no] = dataUrl;
+function openIssue(iss){
+  if(!iss.has_pdf || !iss.pdf_path){
+    if(confirm(`${iss.no}호는 아직 PDF가 업로드되지 않았어요.\n관리자 업로드로 이동할까요?`)){
+      document.querySelector('.tab[data-v="admin"]').click();
+      const noInput = document.getElementById('fNo'); if(noInput) noInput.value = iss.no;
     }
-    if(!canvasEl.isConnected) return; // card may have been re-rendered already
-    const img = new Image();
-    img.onload = ()=>{
-      canvasEl.width = img.width; canvasEl.height = img.height;
-      canvasEl.getContext('2d').drawImage(img, 0, 0);
-    };
-    img.src = dataUrl;
-  }catch(e){ console.error('thumb render failed', e); }
+    return;
+  }
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
+  window.open(data.publicUrl, '_blank');
 }
 
 const gradients = [
@@ -339,9 +328,10 @@ function renderHome(){
     const g = gradients[idx % gradients.length];
     const card = document.createElement('div');
     card.className='lot-card';
+    const cover = thumbUrl(iss);
     card.innerHTML = `
       <div class="swatch" style="background:${g}">
-        <canvas class="cover-canvas"></canvas>
+        ${cover ? `<img class="cover-img" src="${cover}" loading="lazy" onerror="this.remove()">` : ''}
         ${idx===0? '<span class="badge">NEW</span>' : ''}
         <div class="month">${iss.no}<small>호</small></div>
       </div>
@@ -350,9 +340,8 @@ function renderHome(){
         <p class="lot-code mono">${lotCode(iss)} · ${iss.ym}</p>
       </div>
       <div class="barcode"></div>`;
-    card.onclick = ()=>openViewer(iss);
+    card.onclick = ()=>openIssue(iss);
     heroScroll.appendChild(card);
-    renderCoverThumb(iss, card.querySelector('.cover-canvas'));
     const dot = document.createElement('span'); if(idx===0) dot.className='on';
     heroDots.appendChild(dot);
   });
@@ -362,10 +351,10 @@ function renderHome(){
     const g = gradients[(idx+2) % gradients.length];
     const card = document.createElement('div');
     card.className='mini-card';
-    card.innerHTML = `<div class="swatch" style="background:${g}"><canvas class="cover-canvas"></canvas><span class="month">${iss.no}</span></div><div class="cap">${iss.ym}</div>`;
-    card.onclick = ()=>openViewer(iss);
+    const cover = thumbUrl(iss);
+    card.innerHTML = `<div class="swatch" style="background:${g}">${cover ? `<img class="cover-img" src="${cover}" loading="lazy" onerror="this.remove()">` : ''}<span class="month">${iss.no}</span></div><div class="cap">${iss.ym}</div>`;
+    card.onclick = ()=>openIssue(iss);
     pastScroll.appendChild(card);
-    renderCoverThumb(iss, card.querySelector('.cover-canvas'));
   });
 }
 
@@ -377,182 +366,6 @@ document.querySelectorAll('nav.tabbar .tab').forEach(t=>{
     document.getElementById(t.dataset.v==='home'?'viewHome':'viewAdmin').classList.add('on');
   });
 });
-
-// ---------- VIEWER ----------
-const overlay = document.getElementById('viewerOverlay');
-const stage = document.getElementById('stage');
-const vTitle = document.getElementById('vTitle');
-const vSub = document.getElementById('vSub');
-
-async function openViewer(iss){
-  vTitle.textContent = `${iss.no}호 · ${iss.title}`;
-  vSub.textContent = `${lotCode(iss)} · ${iss.ym}`;
-  overlay.classList.add('open');
-  overlayOpenedAt = Date.now();
-  suppressGhostClick();
-  resetZoom();
-  if(!viewerHistoryPushed){
-    history.pushState({ viewerOpen:true }, '');
-    viewerHistoryPushed = true;
-  }
-  if(!iss.has_pdf || !iss.pdf_path){
-    stage.innerHTML = `<div class="viewer-empty"><p>이 호는 아직 PDF가 업로드되지 않았어요.<br>관리자 업로드 탭에서 <b>${iss.no}호</b> PDF를 올려주세요.</p><button id="goAdminBtn">관리자 업로드로 이동</button></div>`;
-    document.getElementById('goAdminBtn').onclick = ()=>{
-      closeViewer();
-      document.querySelector('.tab[data-v="admin"]').click();
-      const noInput = document.getElementById('fNo'); if(noInput) noInput.value = iss.no;
-    };
-    return;
-  }
-  stage.innerHTML = `<div class="viewer-empty"><div class="loading-spin"></div></div>`;
-  try{
-    const { data } = sb.storage.from(BUCKET).getPublicUrl(iss.pdf_path);
-    const pdf = await pdfjsLib.getDocument(data.publicUrl).promise;
-    const containerWidth = stage.clientWidth || 400;
-    const dpr = window.devicePixelRatio || 1;
-
-    const page1 = await pdf.getPage(1);
-    const { canvas: canvas1, cssHeight: h1 } = await renderPdfPage(page1, containerWidth, dpr);
-
-    stage.innerHTML = '';
-    const inner = document.createElement('div');
-    inner.id = 'stageInner';
-    stage.appendChild(inner);
-    stageInner = inner;
-    inner.appendChild(canvas1);
-
-    if(pdf.numPages > 1){
-      const placeholders = [];
-      for(let i=2; i<=pdf.numPages; i++){
-        const ph = document.createElement('div');
-        ph.className = 'pdf-page-placeholder';
-        ph.dataset.page = i;
-        ph.style.width = containerWidth + 'px';
-        ph.style.height = h1 + 'px'; // 대략 1페이지 비율로 예약, 실제 그려지면 자연 조정
-        inner.appendChild(ph);
-        placeholders.push(ph);
-      }
-      const observer = new IntersectionObserver((entries)=>{
-        entries.forEach(async (entry)=>{
-          if(!entry.isIntersecting) return;
-          const ph = entry.target;
-          observer.unobserve(ph);
-          try{
-            const pageNum = Number(ph.dataset.page);
-            const page = await pdf.getPage(pageNum);
-            const { canvas } = await renderPdfPage(page, containerWidth, dpr);
-            ph.replaceWith(canvas);
-          }catch(err){ console.error('page render failed', err); }
-        });
-      }, { root: stage, rootMargin: '1000px 0px', threshold: 0.01 });
-      placeholders.forEach(ph => observer.observe(ph));
-    }
-  }catch(e){
-    console.error(e);
-    stage.innerHTML = `<div class="viewer-empty"><p>PDF를 불러오는 중 오류가 발생했어요.</p></div>`;
-  }
-}
-
-async function renderPdfPage(page, containerWidth, dpr){
-  const baseViewport = page.getViewport({ scale: 1 });
-  // 화면 배율과 상관없이 최소 1400px 물리 해상도를 보장해서 작은 글자/표도 선명하게 렌더링
-  const targetPhysicalWidth = Math.max(Math.min(containerWidth * dpr, containerWidth * 2.2), 1150);
-  const displayScale = targetPhysicalWidth / containerWidth;
-  const viewport = page.getViewport({ scale: targetPhysicalWidth / baseViewport.width });
-  const canvas = document.createElement('canvas');
-  canvas.className = 'pdf-page-canvas';
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  canvas.style.width = containerWidth + 'px';
-  const cssHeight = viewport.height / displayScale;
-  canvas.style.height = cssHeight + 'px';
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  return { canvas, cssHeight };
-}
-let viewerHistoryPushed = false;
-function closeViewer(){
-  overlay.classList.remove('open');
-  if(viewerHistoryPushed){
-    viewerHistoryPushed = false;
-    history.back(); // 열 때 넣어둔 더미 히스토리를 소비 (아이폰 스와이프-뒤로가기가 실제 페이지 이탈 대신 이걸 소비하게 됨)
-  }
-}
-window.addEventListener('popstate', ()=>{
-  // 아이폰 사파리 가장자리 스와이프 등으로 뒤로가기가 발생하면 페이지 이탈 대신 뷰어만 닫음
-  if(overlay.classList.contains('open')){
-    overlay.classList.remove('open');
-    viewerHistoryPushed = false;
-  }
-});
-document.getElementById('closeBtn').onclick = closeViewer;
-let overlayOpenedAt = 0;
-function suppressGhostClick(){
-  const blocker = (e)=>{ e.stopPropagation(); e.preventDefault(); };
-  overlay.addEventListener('click', blocker, true);
-  overlay.addEventListener('touchend', blocker, true);
-  setTimeout(()=>{
-    overlay.removeEventListener('click', blocker, true);
-    overlay.removeEventListener('touchend', blocker, true);
-  }, 500);
-}
-
-// ---------- PINCH TO ZOOM ----------
-let stageInner = null;
-let zoom = 1, panX = 0, panY = 0;
-let pinchStartDist = 0, pinchStartZoom = 1;
-let isPanning = false, panStart = null;
-
-function applyTransform(){
-  if(!stageInner) return;
-  stageInner.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-}
-function resetZoom(){
-  zoom = 1; panX = 0; panY = 0;
-  stage.style.touchAction = 'pan-y';
-  applyTransform();
-}
-function dist(touches){
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.sqrt(dx*dx + dy*dy);
-}
-
-stage.addEventListener('touchstart', (e)=>{
-  if(!stageInner) return;
-  if(e.touches.length === 2){
-    e.preventDefault();
-    pinchStartDist = dist(e.touches);
-    pinchStartZoom = zoom;
-    stage.style.touchAction = 'none';
-  }else if(e.touches.length === 1 && zoom > 1){
-    isPanning = true;
-    panStart = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
-  }
-}, { passive:false });
-
-stage.addEventListener('touchmove', (e)=>{
-  if(!stageInner) return;
-  if(e.touches.length === 2 && pinchStartDist){
-    e.preventDefault();
-    const newDist = dist(e.touches);
-    zoom = Math.min(Math.max(pinchStartZoom * (newDist / pinchStartDist), 1), 4);
-    applyTransform();
-  }else if(e.touches.length === 1 && isPanning){
-    e.preventDefault();
-    panX = e.touches[0].clientX - panStart.x;
-    panY = e.touches[0].clientY - panStart.y;
-    applyTransform();
-  }
-}, { passive:false });
-
-stage.addEventListener('touchend', (e)=>{
-  if(e.touches.length < 2) pinchStartDist = 0;
-  if(e.touches.length === 0){
-    isPanning = false;
-    if(zoom <= 1.02){ zoom = 1; panX = 0; panY = 0; stage.style.touchAction = 'pan-y'; applyTransform(); }
-  }
-});
-overlay.addEventListener('click', (e)=>{ if(e.target===overlay && Date.now()-overlayOpenedAt>400) closeViewer(); });
 
 // ---------- ADMIN GATE ----------
 document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
@@ -594,6 +407,23 @@ fFile.addEventListener('change', ()=>{
   fdSub.textContent = `${(file.size/1024/1024).toFixed(2)} MB`;
 });
 
+async function generateThumbnailBlob(file){
+  const objUrl = URL.createObjectURL(file);
+  try{
+    const pdf = await pdfjsLib.getDocument(objUrl).promise;
+    const page = await pdf.getPage(1);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = 700 / baseViewport.width;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  }finally{
+    URL.revokeObjectURL(objUrl);
+  }
+}
+
 document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const no = document.getElementById('fNo').value.trim();
   const ymRaw = document.getElementById('fYm').value.trim(); // yyyy-mm from month input
@@ -617,9 +447,21 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
     let has_pdf = false, pdf_path = null;
     if(pendingFile){
       pdf_path = `issue-${no}.pdf`;
+      statusMsg.textContent = 'PDF 업로드 중...';
       const { error: upErr } = await sb.storage.from(BUCKET).upload(pdf_path, pendingFile, { upsert:true, contentType:'application/pdf' });
       if(upErr) throw upErr;
       has_pdf = true;
+
+      // 표지 썸네일은 업로드 시점에 딱 한 번만 만들어서 저장 (매번 다시 그리지 않도록)
+      try{
+        statusMsg.textContent = '표지 이미지 생성 중...';
+        const thumbBlob = await generateThumbnailBlob(pendingFile);
+        if(thumbBlob){
+          await sb.storage.from(BUCKET).upload(`thumb-${no}.jpg`, thumbBlob, { upsert:true, contentType:'image/jpeg' });
+        }
+      }catch(thumbErr){
+        console.error('thumbnail generation failed', thumbErr); // 썸네일 실패해도 업로드 자체는 계속 진행
+      }
     }
     const existing = issues.find(i=> String(i.no)===String(no));
     const row = { no:Number(no), ym, title, has_pdf: has_pdf || (existing && existing.has_pdf) || false, pdf_path: pdf_path || (existing && existing.pdf_path) || null };
