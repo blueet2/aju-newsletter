@@ -391,10 +391,14 @@ async function openViewer(iss){
   overlayOpenedAt = Date.now();
   suppressGhostClick();
   resetZoom();
+  if(!viewerHistoryPushed){
+    history.pushState({ viewerOpen:true }, '');
+    viewerHistoryPushed = true;
+  }
   if(!iss.has_pdf || !iss.pdf_path){
     stage.innerHTML = `<div class="viewer-empty"><p>이 호는 아직 PDF가 업로드되지 않았어요.<br>관리자 업로드 탭에서 <b>${iss.no}호</b> PDF를 올려주세요.</p><button id="goAdminBtn">관리자 업로드로 이동</button></div>`;
     document.getElementById('goAdminBtn').onclick = ()=>{
-      overlay.classList.remove('open');
+      closeViewer();
       document.querySelector('.tab[data-v="admin"]').click();
       const noInput = document.getElementById('fNo'); if(noInput) noInput.value = iss.no;
     };
@@ -452,7 +456,7 @@ async function openViewer(iss){
 async function renderPdfPage(page, containerWidth, dpr){
   const baseViewport = page.getViewport({ scale: 1 });
   // 화면 배율과 상관없이 최소 1400px 물리 해상도를 보장해서 작은 글자/표도 선명하게 렌더링
-  const targetPhysicalWidth = Math.max(containerWidth * dpr, 1400);
+  const targetPhysicalWidth = Math.max(Math.min(containerWidth * dpr, containerWidth * 2.2), 1150);
   const displayScale = targetPhysicalWidth / containerWidth;
   const viewport = page.getViewport({ scale: targetPhysicalWidth / baseViewport.width });
   const canvas = document.createElement('canvas');
@@ -465,7 +469,22 @@ async function renderPdfPage(page, containerWidth, dpr){
   await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
   return { canvas, cssHeight };
 }
-document.getElementById('closeBtn').onclick = ()=> overlay.classList.remove('open');
+let viewerHistoryPushed = false;
+function closeViewer(){
+  overlay.classList.remove('open');
+  if(viewerHistoryPushed){
+    viewerHistoryPushed = false;
+    history.back(); // 열 때 넣어둔 더미 히스토리를 소비 (아이폰 스와이프-뒤로가기가 실제 페이지 이탈 대신 이걸 소비하게 됨)
+  }
+}
+window.addEventListener('popstate', ()=>{
+  // 아이폰 사파리 가장자리 스와이프 등으로 뒤로가기가 발생하면 페이지 이탈 대신 뷰어만 닫음
+  if(overlay.classList.contains('open')){
+    overlay.classList.remove('open');
+    viewerHistoryPushed = false;
+  }
+});
+document.getElementById('closeBtn').onclick = closeViewer;
 let overlayOpenedAt = 0;
 function suppressGhostClick(){
   const blocker = (e)=>{ e.stopPropagation(); e.preventDefault(); };
@@ -533,7 +552,7 @@ stage.addEventListener('touchend', (e)=>{
     if(zoom <= 1.02){ zoom = 1; panX = 0; panY = 0; stage.style.touchAction = 'pan-y'; applyTransform(); }
   }
 });
-overlay.addEventListener('click', (e)=>{ if(e.target===overlay && Date.now()-overlayOpenedAt>400) overlay.classList.remove('open'); });
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay && Date.now()-overlayOpenedAt>400) closeViewer(); });
 
 // ---------- ADMIN GATE ----------
 document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
