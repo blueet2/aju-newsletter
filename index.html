@@ -133,6 +133,27 @@
   .lock-wrap h2{font-family:'Space Grotesk'; font-size:17px; margin:0 0 8px;}
   .lock-wrap p{font-size:12px; color:var(--slate); margin:0 0 18px;}
 
+  /* Info pages: 소개 / 기자단 / 모집공고 */
+  .info-page{padding:22px 18px 40px;}
+  .info-eyebrow{font-size:10.5px; color:var(--teal); font-weight:700; letter-spacing:0.1em; margin-bottom:8px;}
+  .info-page h1{font-family:'Space Grotesk'; font-size:22px; margin:0 0 8px; font-weight:700;}
+  .info-page .lead{color:var(--slate); font-size:13px; line-height:1.7; margin:0 0 26px;}
+  .info-block{margin-bottom:22px;}
+  .info-block h3{font-family:'Space Grotesk'; font-size:14px; margin:0 0 8px; color:var(--paper); font-weight:700;}
+  .info-block p{font-size:13px; line-height:1.75; color:var(--paper); margin:0;}
+  .info-tag-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .info-tag{font-size:11.5px; padding:6px 12px; border-radius:999px; background:var(--panel); border:1px solid var(--line); color:var(--paper); font-weight:500;}
+
+  .reporter-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:14px;}
+  .reporter-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 12px; text-align:center;}
+  .reporter-avatar{width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, var(--teal), #1a9f8f); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-family:'Space Grotesk'; font-weight:700; color:#04211d; font-size:16px;}
+  .reporter-name{font-size:13px; font-weight:700; margin:0 0 2px; color:var(--paper);}
+  .reporter-role{font-size:10px; color:var(--teal); font-weight:700; margin:0 0 6px; letter-spacing:0.03em;}
+  .reporter-dept{font-size:10.5px; color:var(--slate); margin:0;}
+
+  .recruit-hero{background:linear-gradient(135deg, rgba(41,217,194,0.14), rgba(245,166,35,0.08)); border:1px solid var(--line); border-radius:16px; padding:22px 18px; margin-bottom:26px;}
+  .recruit-hero h1{margin:0;}
+
   /* ---------- Desktop layout ---------- */
   @media (min-width: 860px){
     body{padding:32px 0;}
@@ -167,6 +188,8 @@
     nav.tabbar .tab{flex-direction:row; gap:8px; font-size:12.5px; justify-content:center;}
 
     .admin-wrap{max-width:520px; margin:0 auto; padding:32px 24px 40px;}
+    .info-page{max-width:640px; margin:0 auto; padding:32px 24px 40px;}
+    .reporter-grid{grid-template-columns:repeat(4, 1fr);}
 
     .viewer-overlay{background:rgba(4,6,8,0.7);}
     .viewer{max-width:760px; height:92vh; border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,0.6);}
@@ -208,6 +231,91 @@
     </div>
     <div class="notice" id="noticeBox">
       <div class="txt">📌 <b>이달의 생산월보</b>는 매월 둘째주에서 셋째주에 업로드됩니다.<br>지난 생산월보도 보관 중이니 열람 부탁드려요.</div>
+    </div>
+  </div>
+
+  <!-- INTRO VIEW -->
+  <div class="view" id="viewIntro">
+    <div class="info-page">
+      <div class="info-eyebrow mono">ABOUT</div>
+      <h1>생산월보 소개</h1>
+      <p class="lead">생산현장의 이야기를 가장 가까이에서 전하는 아주약품 평택공장 사내 뉴스레터입니다.</p>
+
+      <div class="info-block">
+        <h3>무엇인가요?</h3>
+        <p>생산월보는 평택공장 생산기획팀이 매달 발행하는 사내 뉴스레터예요. 제조·품질·안전 현장의 소식부터 부서 동정, 사내 이벤트까지 — 현장에서 일어나는 이야기를 임직원 모두가 한눈에 볼 수 있도록 담고 있어요.<br><br>
+        <span style="color:var(--slate); font-size:12px;">※ 이 문단은 임시 소개글이에요. 실제 소개 문구를 알려주시면 그대로 교체해드릴게요.</span></p>
+      </div>
+
+      <div class="info-block">
+        <h3>발행 주기</h3>
+        <p>매월 둘째주에서 셋째주 사이에 새 호가 업로드돼요. 과월호도 홈 화면의 "지난 호 보기"에서 언제든 다시 볼 수 있어요.</p>
+      </div>
+
+      <div class="info-block">
+        <h3>만드는 사람들</h3>
+        <p>생산기획팀과 사내 기자단이 함께 취재하고 만들어요. 기자단이 궁금하시면 <b style="color:var(--teal);">기자단</b> 탭을, 참여하고 싶으시면 <b style="color:var(--teal);">모집공고</b> 탭을 확인해보세요.</p>
+      </div>
+
+      <div class="info-block">
+        <h3>문의</h3>
+        <p>생산월보 관련 제안이나 취재 요청은 생산기획팀으로 연락해주세요.<br>
+        <span style="color:var(--slate); font-size:12px;">※ 연락처(이메일/내선번호)를 알려주시면 여기 넣어드릴게요.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTERS VIEW -->
+  <div class="view" id="viewReporters">
+    <div class="info-page">
+      <div class="info-eyebrow mono">TEAM</div>
+      <h1>기자단 소개</h1>
+      <p class="lead">생산월보를 함께 만들어가는 사내 기자단을 소개합니다.</p>
+
+      <div class="reporter-grid" id="reporterGrid"></div>
+
+      <p style="font-size:11.5px; color:var(--slate); margin-top:18px; text-align:center;">
+        * 실제 기자단 이름/사진/한마디를 알려주시면 이 자리를 채워드려요.
+      </p>
+    </div>
+  </div>
+
+  <!-- RECRUIT VIEW -->
+  <div class="view" id="viewRecruit">
+    <div class="info-page">
+      <div class="recruit-hero">
+        <div class="info-eyebrow mono">RECRUITING</div>
+        <h1 style="margin-bottom:8px;">생산월보 기자단 모집</h1>
+        <p class="lead" style="margin-bottom:0;">생산 현장의 이야기, 함께 취재하고 기록해요.</p>
+      </div>
+
+      <div class="info-block">
+        <h3>모집 부문</h3>
+        <div class="info-tag-row">
+          <span class="info-tag">편집 기자</span>
+          <span class="info-tag">사진 기자</span>
+          <span class="info-tag">부서 통신원</span>
+        </div>
+      </div>
+
+      <div class="info-block">
+        <h3>지원 자격</h3>
+        <p>아주약품 평택공장 재직자라면 누구나 지원 가능해요. 글쓰기나 사진 경험이 없어도 괜찮아요 — 현장 이야기에 관심 있는 분이면 충분해요.</p>
+      </div>
+
+      <div class="info-block">
+        <h3>활동 혜택</h3>
+        <p>취재 활동비 지원, 우수 기자단 포상, 사보 지면 이력 인정 등<br>
+        <span style="color:var(--slate); font-size:12px;">※ 실제 혜택 내용으로 교체 예정이에요.</span></p>
+      </div>
+
+      <div class="info-block">
+        <h3>모집 기간 · 지원 방법</h3>
+        <p>모집 기간: <b>추후 공지</b><br>지원 방법: <b>추후 공지</b></p>
+      </div>
+
+      <a href="mailto:production-planning@example.com" class="submit-btn" style="display:block; text-align:center; text-decoration:none; margin-top:8px;">지원 문의하기</a>
+      <p style="font-size:11px; color:var(--slate); margin-top:8px; text-align:center;">※ 문의 이메일 주소를 알려주시면 실제 주소로 연결해드릴게요.</p>
     </div>
   </div>
 
@@ -254,10 +362,19 @@
 
   <nav class="tabbar">
     <div class="tab active" data-v="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>HOME
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>홈
+    </div>
+    <div class="tab" data-v="intro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="11"/><circle cx="12" cy="7.5" r="0.6" fill="currentColor"/></svg>소개
+    </div>
+    <div class="tab" data-v="reporters">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>기자단
+    </div>
+    <div class="tab" data-v="recruit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>모집공고
     </div>
     <div class="tab" data-v="admin">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>관리자 업로드
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>관리자
     </div>
   </nav>
 </div>
@@ -395,12 +512,13 @@ function renderHome(){
   });
 }
 
+const viewIdMap = { home:'viewHome', intro:'viewIntro', reporters:'viewReporters', recruit:'viewRecruit', admin:'viewAdmin' };
 document.querySelectorAll('nav.tabbar .tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('nav.tabbar .tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-    document.getElementById(t.dataset.v==='home'?'viewHome':'viewAdmin').classList.add('on');
+    document.getElementById(viewIdMap[t.dataset.v]).classList.add('on');
   });
 });
 
@@ -602,6 +720,28 @@ document.getElementById('themeToggle').addEventListener('click', ()=>{
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(current === 'dark' ? 'light' : 'dark');
 });
+
+// ---------- REPORTER PLACEHOLDER ----------
+const reporterPlaceholders = [
+  { role:'편집장', dept:'생산기획팀' },
+  { role:'편집 기자', dept:'생산1팀' },
+  { role:'사진 기자', dept:'생산2팀' },
+  { role:'부서 통신원', dept:'품질보증팀' },
+  { role:'부서 통신원', dept:'안전환경팀' },
+  { role:'부서 통신원', dept:'포장팀' },
+];
+(function renderReporterPlaceholders(){
+  const grid = document.getElementById('reporterGrid');
+  if(!grid) return;
+  grid.innerHTML = reporterPlaceholders.map(r => `
+    <div class="reporter-card">
+      <div class="reporter-avatar">?</div>
+      <p class="reporter-name">○○○</p>
+      <p class="reporter-role">${r.role}</p>
+      <p class="reporter-dept">${r.dept}</p>
+    </div>
+  `).join('');
+})();
 
 loadIssues();
 </script>
