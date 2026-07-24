@@ -144,12 +144,23 @@
   .info-tag-row{display:flex; gap:8px; flex-wrap:wrap;}
   .info-tag{font-size:11.5px; padding:6px 12px; border-radius:999px; background:var(--panel); border:1px solid var(--line); color:var(--paper); font-weight:500;}
 
-  .reporter-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:14px;}
-  .reporter-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 12px; text-align:center;}
-  .reporter-avatar{width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, var(--teal), #1a9f8f); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-family:'Space Grotesk'; font-weight:700; color:#04211d; font-size:16px;}
-  .reporter-name{font-size:13px; font-weight:700; margin:0 0 2px; color:var(--paper);}
-  .reporter-role{font-size:10px; color:var(--teal); font-weight:700; margin:0 0 6px; letter-spacing:0.03em;}
-  .reporter-dept{font-size:10.5px; color:var(--slate); margin:0;}
+  .reporter-grid{display:grid; grid-template-columns:1fr; gap:12px;}
+  .avatar-circle{border-radius:50%; background:var(--panel-2); display:flex; align-items:center; justify-content:center; flex:none;}
+  .reporter-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; gap:14px; align-items:flex-start; text-align:left;}
+  .reporter-card .avatar-circle{width:44px; height:44px; font-size:20px;}
+  .reporter-name{font-size:13.5px; font-weight:700; margin:0; color:var(--paper); display:inline;}
+  .reporter-role{font-size:10px; color:var(--teal); font-weight:700; letter-spacing:0.03em; margin-left:6px;}
+  .r-beat{font-size:10.5px; color:var(--slate); margin:2px 0 6px;}
+  .r-desc{font-size:11.5px; line-height:1.65; color:var(--paper); margin:0;}
+
+  .editor-card{
+    display:flex; align-items:center; gap:16px; background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:20px 18px; margin-bottom:26px;
+  }
+  .editor-card .avatar-circle{width:60px; height:60px; font-size:26px;}
+  .editor-card .ec-name{font-size:15px; font-weight:700; margin:0 0 2px; color:var(--paper);}
+  .editor-card .ec-role{font-size:10.5px; color:var(--teal); font-weight:700; margin:0 0 8px; letter-spacing:0.03em;}
+  .editor-card .ec-quote{font-size:12px; color:var(--slate); line-height:1.6; margin:0;}
 
   .recruit-hero{background:linear-gradient(135deg, rgba(41,217,194,0.14), rgba(245,166,35,0.08)); border:1px solid var(--line); border-radius:16px; padding:22px 18px; margin-bottom:26px;}
   .recruit-hero h1{margin:0;}
@@ -189,7 +200,7 @@
 
     .admin-wrap{max-width:520px; margin:0 auto; padding:32px 24px 40px;}
     .info-page{max-width:640px; margin:0 auto; padding:32px 24px 40px;}
-    .reporter-grid{grid-template-columns:repeat(4, 1fr);}
+    .reporter-grid{grid-template-columns:repeat(2, 1fr);}
 
     .viewer-overlay{background:rgba(4,6,8,0.7);}
     .viewer{max-width:760px; height:92vh; border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,0.6);}
@@ -239,28 +250,26 @@
     <div class="info-page">
       <div class="info-eyebrow mono">ABOUT</div>
       <h1>생산월보 소개</h1>
-      <p class="lead">생산현장의 이야기를 가장 가까이에서 전하는 아주약품 평택공장 사내 뉴스레터입니다.</p>
+      <p class="lead">평택공장에 근무하는 직원들이 함께 만들어가는 사내 소식지입니다.<br>현장의 이야기와 구성원들의 다양한 소식을 한데 모아 매월 전해드립니다.</p>
 
       <div class="info-block">
         <h3>무엇인가요?</h3>
-        <p>생산월보는 평택공장 생산기획팀이 매달 발행하는 사내 뉴스레터예요. 제조·품질·안전 현장의 소식부터 부서 동정, 사내 이벤트까지 — 현장에서 일어나는 이야기를 임직원 모두가 한눈에 볼 수 있도록 담고 있어요.<br><br>
-        <span style="color:var(--slate); font-size:12px;">※ 이 문단은 임시 소개글이에요. 실제 소개 문구를 알려주시면 그대로 교체해드릴게요.</span></p>
+        <p>생산월보는 평택공장에서 일어나는 다양한 이야기를 담아 전하는 사내 뉴스레터입니다. 생산현장의 변화와 개선 활동, 품질과 안전 소식, 부서 이야기, 사내 행사와 직원들의 일상까지 현장의 생생한 소식을 누구나 쉽고 재미있게 만나볼 수 있습니다.</p>
       </div>
 
       <div class="info-block">
         <h3>발행 주기</h3>
-        <p>매월 둘째주에서 셋째주 사이에 새 호가 업로드돼요. 과월호도 홈 화면의 "지난 호 보기"에서 언제든 다시 볼 수 있어요.</p>
+        <p>생산월보는 매월 한 차례 발행되며, 지난 호는 홈페이지 '지난 호 보기' 메뉴에서 언제든지 다시 확인하실 수 있습니다.</p>
       </div>
 
       <div class="info-block">
         <h3>만드는 사람들</h3>
-        <p>생산기획팀과 사내 기자단이 함께 취재하고 만들어요. 기자단이 궁금하시면 <b style="color:var(--teal);">기자단</b> 탭을, 참여하고 싶으시면 <b style="color:var(--teal);">모집공고</b> 탭을 확인해보세요.</p>
+        <p>평택공장의 여러 부서 직원들이 사내 기자단으로 참여하여 직접 취재하고 함께 만들어갑니다. 현장의 생생한 이야기와 구성원들의 다양한 소식을 직원들의 시선으로 전하고 있습니다.</p>
       </div>
 
       <div class="info-block">
         <h3>문의</h3>
-        <p>생산월보 관련 제안이나 취재 요청은 생산기획팀으로 연락해주세요.<br>
-        <span style="color:var(--slate); font-size:12px;">※ 연락처(이메일/내선번호)를 알려주시면 여기 넣어드릴게요.</span></p>
+        <p><b>여러분의 이야기가 생산월보를 더욱 풍성하게 만듭니다.</b><br>소개하고 싶은 소식이나 함께 나누고 싶은 이야기가 있다면 언제든지 <b>사내 기자단</b>에게 알려주세요.</p>
       </div>
     </div>
   </div>
@@ -272,11 +281,12 @@
       <h1>기자단 소개</h1>
       <p class="lead">생산월보를 함께 만들어가는 사내 기자단을 소개합니다.</p>
 
-      <div class="reporter-grid" id="reporterGrid"></div>
+      <div class="editor-card" id="editorCard"></div>
 
-      <p style="font-size:11.5px; color:var(--slate); margin-top:18px; text-align:center;">
-        * 실제 기자단 이름/사진/한마디를 알려주시면 이 자리를 채워드려요.
-      </p>
+      <div class="info-block" style="margin-top:6px;">
+        <h3 id="teamLabel">생산월보 1기 기자단</h3>
+      </div>
+      <div class="reporter-grid" id="reporterGrid"></div>
     </div>
   </div>
 
@@ -721,24 +731,49 @@ document.getElementById('themeToggle').addEventListener('click', ()=>{
   applyTheme(current === 'dark' ? 'light' : 'dark');
 });
 
-// ---------- REPORTER PLACEHOLDER ----------
-const reporterPlaceholders = [
-  { role:'편집장', dept:'생산기획팀' },
-  { role:'편집 기자', dept:'생산1팀' },
-  { role:'사진 기자', dept:'생산2팀' },
-  { role:'부서 통신원', dept:'품질보증팀' },
-  { role:'부서 통신원', dept:'안전환경팀' },
-  { role:'부서 통신원', dept:'포장팀' },
+// ---------- 기자단 ----------
+const editorInChief = {
+  emoji: '👨\u200d💼',
+  name: '서동현',
+  role: '편집장',
+  beat: '기획 · 편집',
+  quote: '생산월보의 기획과 편집을 총괄하며, 평택공장의 다양한 이야기를 한 권의 월보에 담아 구성원들과 소통하고 있습니다.'
+};
+const reporterTeam = [
+  { emoji:'🤖', name:'조성우', beat:'AI · 디지털', desc:'AI와 디지털 기술, 업무 혁신 사례를 쉽고 재미있게 소개하며 새로운 변화를 전합니다.' },
+  { emoji:'🩺', name:'이영란', beat:'건강', desc:'건강한 직장생활을 위한 다양한 건강 정보와 생활 속 유익한 이야기를 전달합니다.' },
+  { emoji:'🌱', name:'박성혜', beat:'환경', desc:'ESG와 환경, 문화 이야기를 통해 지속가능한 실천과 일상의 가치를 함께 나눕니다.' },
+  { emoji:'💊', name:'심우준', beat:'제약 Study', desc:'제약산업과 신제품, 다양한 제형 등 제약 전문지식을 알기 쉽게 소개합니다.' },
+  { emoji:'📊', name:'정시언', beat:'DI', desc:'데이터 무결성(DI)과 제약 품질 문화를 이해하기 쉽게 전달합니다.' },
+  { emoji:'🦺', name:'장재왕', beat:'산업안전', desc:'안전한 일터를 만들기 위한 산업안전 정보와 예방 활동을 소개합니다.' },
+  { emoji:'🚒', name:'차영채', beat:'소방', desc:'화재 예방과 소방 안전 정보를 쉽고 실용적으로 전달합니다.' },
+  { emoji:'🍜', name:'박서안', beat:'맛집', desc:'평택과 주변의 숨은 맛집을 소개하며 구성원들에게 즐거움을 전합니다.' },
+  { emoji:'💊', name:'이인표', beat:'우리회사 제품', desc:'아주약품의 주요 제품과 의약품 정보를 쉽고 재미있게 소개합니다.' },
+  { emoji:'💊', name:'김수재', beat:'일반의약품', desc:'약국에서 자주 만나는 일반의약품과 올바른 복약 정보를 알기 쉽게 전달합니다.' },
+  { emoji:'👥', name:'류다은', beat:'동아리 · 인터뷰', desc:'사내 동아리와 구성원들의 다양한 이야기를 취재하며 사람 중심의 소식을 전합니다.' },
 ];
-(function renderReporterPlaceholders(){
+(function renderReporters(){
+  const editorEl = document.getElementById('editorCard');
+  if(editorEl){
+    editorEl.innerHTML = `
+      <div class="avatar-circle">${editorInChief.emoji}</div>
+      <div>
+        <p class="ec-name">${editorInChief.name}<span class="reporter-role">${editorInChief.role}</span></p>
+        <p class="r-beat">${editorInChief.beat}</p>
+        <p class="ec-quote">${editorInChief.quote}</p>
+      </div>
+    `;
+  }
   const grid = document.getElementById('reporterGrid');
   if(!grid) return;
-  grid.innerHTML = reporterPlaceholders.map(r => `
+  grid.innerHTML = reporterTeam.map(r => `
     <div class="reporter-card">
-      <div class="reporter-avatar">?</div>
-      <p class="reporter-name">○○○</p>
-      <p class="reporter-role">${r.role}</p>
-      <p class="reporter-dept">${r.dept}</p>
+      <div class="avatar-circle">${r.emoji}</div>
+      <div>
+        <p class="reporter-name">${r.name}<span class="reporter-role">기자</span></p>
+        <p class="r-beat">${r.beat}</p>
+        <p class="r-desc">${r.desc}</p>
+      </div>
     </div>
   `).join('');
 })();
