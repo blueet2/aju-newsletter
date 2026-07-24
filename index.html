@@ -137,6 +137,16 @@
   .lock-wrap h2{font-family:'Roboto'; font-size:17px; margin:0 0 8px;}
   .lock-wrap p{font-size:12px; color:var(--slate); margin:0 0 18px;}
 
+  .site-gate{position:fixed; inset:0; background:var(--ink); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .site-gate.hidden{display:none;}
+  .site-gate-box{max-width:320px; width:100%; text-align:center;}
+  .site-gate-box h2{font-family:'Roboto'; font-size:19px; margin:0 0 6px; color:var(--paper);}
+  .site-gate-box p{font-size:12.5px; color:var(--slate); margin:0 0 20px; line-height:1.6;}
+  .site-gate-box input{
+    width:100%; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; color:var(--paper); font-size:14px; text-align:center; margin-bottom:12px;
+  }
+
   /* Info pages: 소개 / 기자단 / 모집공고 */
   .info-page{padding:22px 18px 40px;}
   .info-eyebrow{font-size:10.5px; color:var(--teal); font-weight:700; letter-spacing:0.1em; margin-bottom:8px;}
@@ -212,6 +222,18 @@
 </style>
 </head>
 <body>
+
+<div class="site-gate" id="siteGate">
+  <div class="site-gate-box">
+    <div class="mark" style="margin:0 auto 16px; width:44px; height:44px; font-size:18px; border-radius:10px; background:linear-gradient(135deg, var(--teal), #1967D2); display:flex; align-items:center; justify-content:center; font-family:'Roboto'; font-weight:700; color:var(--on-accent);">AJU</div>
+    <h2>생산월보</h2>
+    <p>사내 임직원만 열람할 수 있어요. 비밀번호를 입력해주세요.</p>
+    <input type="password" id="siteGatePw" placeholder="비밀번호">
+    <button class="submit-btn" id="siteGateBtn">입장하기</button>
+    <div class="status-msg" id="siteGateMsg"></div>
+  </div>
+</div>
+
 <div class="app">
   <header>
     <div class="brand">
@@ -415,7 +437,30 @@
 const SUPABASE_URL = 'https://yrxqfynnzvgfyritltav.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyeHFmeW5uenZnZnlyaXRsdGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NjczMjgsImV4cCI6MjEwMDM0MzMyOH0.OgA8gEZKZ6OW-vErflzhiHPF-dEs4PwDPEF_3DEDR_w';
 const ADMIN_PASSWORD = 'aju2026'; // 원하는 비밀번호로 바꾸세요
+const SITE_PASSWORD = 'aju12345'; // 사내 임직원 공통 비밀번호, 원하는 값으로 바꾸세요
 // ================================================================================
+// ---------- SITE GATE ----------
+(function siteGate(){
+  const gate = document.getElementById('siteGate');
+  if(localStorage.getItem('site-unlocked') === 'yes'){
+    gate.classList.add('hidden');
+    return;
+  }
+  const pwInput = document.getElementById('siteGatePw');
+  const msg = document.getElementById('siteGateMsg');
+  function tryUnlock(){
+    if(pwInput.value === SITE_PASSWORD){
+      localStorage.setItem('site-unlocked', 'yes');
+      gate.classList.add('hidden');
+    }else{
+      msg.textContent = '비밀번호가 올바르지 않아요.';
+      msg.className = 'status-msg err';
+    }
+  }
+  document.getElementById('siteGateBtn').addEventListener('click', tryUnlock);
+  pwInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryUnlock(); });
+})();
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET = 'newsletters';
 
